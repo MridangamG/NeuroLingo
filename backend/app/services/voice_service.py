@@ -7,26 +7,29 @@ from typing import Optional
 from google import genai
 from google.genai import types
 from gtts import gTTS
-from app.core.config import settings
+from app.services.retry import retry_with_backoff, get_gemini_client
 
 
 class VoiceService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        pass
 
     async def transcribe(self, audio_bytes: bytes, mime_type: str = "audio/wav") -> str:
         """
         Transcribe audio to text using Gemini's multimodal capabilities.
         """
         try:
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
+            client = get_gemini_client()
+            # Using 1.5-flash here to avoid the strict 20 req/day limit on 2.5-flash
+            response = await retry_with_backoff(
+                client.models.generate_content,
+                model="gemini-1.5-flash",
                 contents=[
                     types.Content(
                         parts=[
                             types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
                             types.Part.from_text(
-                                "Transcribe this audio exactly as spoken. "
+                                text="Transcribe this audio exactly as spoken. "
                                 "Return ONLY the transcribed text, nothing else."
                             ),
                         ]

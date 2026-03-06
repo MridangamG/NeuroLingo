@@ -1,13 +1,12 @@
 import json
 from typing import Dict, Any
 from google import genai
-from app.core.config import settings
-from app.services.retry import retry_with_backoff
+from app.services.retry import retry_with_backoff, get_gemini_client
 
 
 class LLMPipeline:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        pass
 
     def _strip_markdown(self, text: str) -> str:
         """Strip markdown code fences from LLM responses."""
@@ -56,9 +55,10 @@ class LLMPipeline:
         """
 
         try:
+            client = get_gemini_client()
             # --- Generator Agent (with retry) ---
             gen_response = await retry_with_backoff(
-                self.client.models.generate_content,
+                client.models.generate_content,
                 model='gemini-2.5-flash',
                 contents=generator_prompt,
             )
@@ -80,7 +80,7 @@ class LLMPipeline:
             }}
             """
             ver_response = await retry_with_backoff(
-                self.client.models.generate_content,
+                client.models.generate_content,
                 model='gemini-2.5-flash',
                 contents=verifier_prompt,
             )
