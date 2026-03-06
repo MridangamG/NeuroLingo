@@ -7,6 +7,7 @@ import functools
 import random
 from typing import TypeVar, Callable, Any
 from google import genai
+from google.genai import errors
 from app.core.config import settings
 
 T = TypeVar("T")
@@ -57,8 +58,14 @@ async def retry_with_backoff(
             return result
         except Exception as exc:
             last_exception = exc
-            error_msg = str(exc)
-            is_rate_limit = "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg
+            is_rate_limit = False
+            
+            # Use specific error checking for the new genai SDK
+            if isinstance(exc, errors.APIError):
+                if exc.code == 429 or "RESOURCE_EXHAUSTED" in str(exc) or "429" in str(exc):
+                    is_rate_limit = True
+            elif "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                is_rate_limit = True
 
             if not is_rate_limit or attempt == max_retries:
                 raise

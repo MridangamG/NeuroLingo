@@ -20,10 +20,9 @@ class VoiceService:
         """
         try:
             client = get_gemini_client()
-            # Using 1.5-flash here to avoid the strict 20 req/day limit on 2.5-flash
             response = await retry_with_backoff(
                 client.models.generate_content,
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=[
                     types.Content(
                         parts=[
